@@ -1,5 +1,69 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
-  "resources": []
+	"$schema": "https://schema.management.azure.com/schemas/2019-08-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspace_name": {
+			"type": "string",
+			"minLength": 3,
+			"maxLength": 30
+		},
+		"location": {
+			"type": "string",
+			"defaultValue": "[resourceGroup().location]"
+		},
+		"retentionInDays": {
+			"type": "int",
+			"defaultValue": 730,
+			"metadata": { "description": "Number of days to retain data." }
+		},
+		"sku": {
+          "type": "string",
+          "allowedValues": [
+            "pergb2018",
+            "Free",
+            "Standalone",
+            "PerNode",
+            "Standard",
+            "Premium"
+            ],
+          "defaultValue": "pergb2018",
+          "metadata": { "description": "Pricing tier: PerGB2018 or legacy tiers (Free, Standalone, PerNode, Standard or Premium) which are not available to all customers." }
+        },
+		"resourcePermissions": {
+          "type": "bool",
+          "metadata": { "description": "true to use resource or workspace permissions. false to require workspace permissions." },
+		  "defaultValue": true
+		}
+	},
+	"resources": [{
+		"type": "microsoft.operationalinsights/workspaces",
+		"apiVersion": "2020-10-01",
+		"name": "[parameters('workspace_name')]",
+		"location": "[parameters('location')]",
+		"properties": {
+			"sku": {
+				"name": "[parameters('sku')]"
+			},
+			"retentionInDays": "[parameters('retentionInDays')]",
+			"features": {
+				"searchVersion": 1,
+                "legacy": 0,
+                "enableLogAccessUsingOnlyResourcePermissions": "[parameters('resourcePermissions')]"
+			}
+		}
+	}],
+	"outputs": {
+		"workspaceCustomerId": {
+			"value": "[reference(parameters('workspace_name')).customerId]",
+			"type": "string"
+		},
+		"workspacePrimaryKey": {
+			"value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspace_name')), '2020-10-01').primarySharedKey]",
+			"type": "string"
+		},
+		"workspaceSecondaryKey": {
+			"value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspace_name')), '2020-10-01').secondarySharedKey]",
+			"type": "string"
+		}
+	}
 }
